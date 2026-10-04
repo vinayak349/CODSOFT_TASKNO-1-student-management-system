@@ -1,0 +1,47 @@
+# Dependency directories
+node_modules/
+.pnpm-store/
+
+# Next.js build & cache outputs
+.next/
+out/
+build/
+dist/
+.cache/
+
+# Environment files with secrets
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env*.local
+
+# Keep .env.example safe for repository sharing
+!.env.example
+
+# Logs and debug files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage directory
+coverage/
+
+# OS-specific temporary & metadata files
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# IDE / Editor configuration files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local database files
+*.db
+*.sqlite

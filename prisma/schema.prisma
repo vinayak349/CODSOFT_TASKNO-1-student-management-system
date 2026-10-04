@@ -1,0 +1,208 @@
+// EduManage Prisma Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum FeeStatus {
+  PAID
+  PARTIAL
+  PENDING
+  OVERDUE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student?
+  teacher Teacher?
+
+  @@map("users")
+}
+
+model Student {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId   String    @unique
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  dateOfBirth DateTime?
+  gender      String?
+  address     String?
+  status      String    @default("ACTIVE")
+  classId     String?
+  class       Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+
+  attendances Attendance[]
+  examResults ExamResult[]
+  fees        Fee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("students")
+}
+
+model Teacher {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId  String   @unique
+  name        String
+  email       String
+  phone       String?
+  department  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacherSubjects TeacherSubject[]
+  attendances     Attendance[]
+
+  @@map("teachers")
+}
+
+model Class {
+  id           String    @id @default(cuid())
+  name         String
+  semester     String
+  academicYear String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  students Student[]
+  subjects Subject[]
+
+  @@map("classes")
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  credits   Int      @default(3)
+  classId   String?
+  class     Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacherSubjects TeacherSubject[]
+  attendances     Attendance[]
+  exams           Exam[]
+
+  @@map("subjects")
+}
+
+model TeacherSubject {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([teacherId, subjectId])
+  @@map("teacher_subjects")
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  studentId String
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacherId String?
+  teacher   Teacher?         @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  date      DateTime
+  status    AttendanceStatus @default(PRESENT)
+  createdAt DateTime         @default(now())
+
+  @@unique([studentId, subjectId, date])
+  @@map("attendances")
+}
+
+model Exam {
+  id           String   @id @default(cuid())
+  name         String
+  subjectId    String
+  subject      Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  date         DateTime
+  totalMarks   Float    @default(100)
+  passingMarks Float    @default(40)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  results ExamResult[]
+
+  @@map("exams")
+}
+
+model ExamResult {
+  id        String   @id @default(cuid())
+  examId    String
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  marks     Float
+  grade     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([examId, studentId])
+  @@map("exam_results")
+}
+
+model Fee {
+  id          String    @id @default(cuid())
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String    @default("Semester Tuition Fee")
+  amount      Float
+  paidAmount  Float     @default(0)
+  dueDate     DateTime
+  status      FeeStatus @default(PENDING)
+  paymentDate DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  payments FeePayment[]
+
+  @@map("fees")
+}
+
+model FeePayment {
+  id            String   @id @default(cuid())
+  feeId         String
+  fee           Fee      @relation(fields: [feeId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentDate   DateTime @default(now())
+  paymentMethod String   @default("CASH")
+  referenceNo   String?
+  createdAt     DateTime @default(now())
+
+  @@map("fee_payments")
+}
